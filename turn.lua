@@ -725,6 +725,7 @@ function courseplay:turn(vehicle, dt)
 		AIVehicleUtil.driveInDirection(vehicle, dt, vehicle.cp.steeringAngle, directionForce, 0.5, 20, allowedToDrive, moveForwards, lx, lz, refSpeed, 1);
 	else
 		dtpZ = dtpZ * 0.85;
+		print( string.format( "Drivetopoint (%d) %d %d", vehicle.cp.curTurnIndex, dtpX, dtpZ ))
 		AIVehicleUtil.driveToPoint(vehicle, dt, directionForce, allowedToDrive, moveForwards, dtpX, dtpZ, refSpeed);
 	end;
 	courseplay:setTrafficCollision(vehicle, lx, lz, true);
@@ -2068,26 +2069,31 @@ function courseplay:startAlignmentCourse( vehicle, targetWaypoint )
 	-- save current course (if we had at least a trace of object oriented practices
 	-- then all the course data would be in a single table and not flattened 
 	-- out across fifty different keys and it would be so much easier to save/restore a course)
-	vehicle.cp.alignment.savedWaypoints = vehicle.Waypoints
-	vehicle.cp.alignment.savedWaypointIndex = vehicle.cp.waypointIndex	
-	vehicle.cp.alignment.savedpreviousWaypointIndex = vehicle.cp.previousWaypointIndex	
+	--vehicle.cp.alignment.savedWaypoints = vehicle.Waypoints
+	--vehicle.cp.alignment.savedWaypointIndex = vehicle.cp.waypointIndex	
+	--vehicle.cp.alignment.savedpreviousWaypointIndex = vehicle.cp.previousWaypointIndex	
 	-- for my life I won't understand why aren't we just using #vehicle.Waypoints everywhere
 	-- if we were, there'd be a need to save and restore it and maintain it, oh boy, but I don't 
 	-- have a week to refactor it everywhere 
-	vehicle.cp.alignment.savedNumWaypoints = vehicle.cp.numWaypoints
+	--vehicle.cp.alignment.savedNumWaypoints = vehicle.cp.numWaypoints
 	-- make sure we don't stop at the end of the alignment course 
-	vehicle.cp.alignment.stopAtEnd = vehicle.cp.stopAtEnd
-	vehicle.cp.stopAtEnd = false
-	vehicle.Waypoints = {}
+	--vehicle.cp.alignment.stopAtEnd = vehicle.cp.stopAtEnd
+	--vehicle.cp.stopAtEnd = false
+	--vehicle.Waypoints = {}
+	courseplay:clearTurnTargets( vehicle )
 	for _, point in ipairs( points ) do
 		-- add coordinates to cx/cz _and_ x/z for Waypoints in general and for nextTargets in mode2. 
 		-- why, why, why can't we call them x and z everywhere?
-		local alignWp = { cx = point.posX, cz = point.posZ, x = point.posX, z = point.posZ } 
-		table.insert( vehicle.Waypoints, alignWp )
+		--local alignWp = { cx = point.posX, cz = point.posZ, x = point.posX, z = point.posZ } 
+		--table.insert( vehicle.Waypoints, alignWp )
+		courseplay:addTurnTarget( vehicle, point.posX, point.posZ, false )
 		courseplay.debugVehicle( 14, vehicle, "(Align) Adding an alignment wp: (%1.f, %1.f)", point.posX, point.posZ )
-	end	
-	vehicle.cp.numWaypoints = #vehicle.Waypoints
-	courseplay:setWaypointIndex(vehicle, 1);
+	end
+	vehicle.cp.turnTargets[#vehicle.cp.turnTargets].turnEnd = true
+	vehicle.cp.turnStage = 2
+	vehicle.cp.isTurning = true
+	--vehicle.cp.numWaypoints = #vehicle.Waypoints
+	--courseplay:setWaypointIndex(vehicle, 1);
 end
 
 -- is the vehicle currently on an alignment course?
@@ -2113,6 +2119,7 @@ function courseplay:endAlignmentCourse( vehicle )
 	else
 		courseplay:debug(string.format("%s:(Align) Ending alignment course but not on alignment course.", nameNum(vehicle)), 14 )
 	end
+	courseplay:clearTurnTargets( vehicle )
 end
 
 -- do not delete this line
